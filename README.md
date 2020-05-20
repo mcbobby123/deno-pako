@@ -9,7 +9,7 @@ This project is port of [pako][] to deno.
 Full docs - http://nodeca.github.io/pako/
 
 ```js
-import pako from 'https://raw.githubusercontent.com/kt3k/deno-pako/master/index.js';
+import pako from 'https://raw.githubusercontent.com/mcbobby123/deno-pako/master/index.js';
 
 // Deflate
 //
@@ -51,7 +51,7 @@ big objects as json to server. Pako detects input data type. You can
 force output to be string with option `{ to: 'string' }`.
 
 ```js
-import pako from 'https://raw.githubusercontent.com/kt3k/deno-pako/master/index.js';
+import pako from 'https://raw.githubusercontent.com/mcbobby123/deno-pako/master/index.js';
 
 const test = { my: 'super', puper: [456, 567], awesome: 'pako' };
 
