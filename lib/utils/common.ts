@@ -5,13 +5,13 @@ var TYPED_OK =  (typeof Uint8Array !== 'undefined') &&
                 (typeof Uint16Array !== 'undefined') &&
                 (typeof Int32Array !== 'undefined');
 
-function _has(obj, key) {
+function _has(obj: any, key: string) {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
-const exports = {};
+const exports = {} as any;
 
-exports.assign = function (obj /*from1, from2, from3, ...*/) {
+exports.assign = function (obj: any /*from1, from2, from3, ...*/) {
   var sources = Array.prototype.slice.call(arguments, 1);
   while (sources.length) {
     var source = sources.shift();
@@ -33,7 +33,7 @@ exports.assign = function (obj /*from1, from2, from3, ...*/) {
 
 
 // reduce buffer size, avoiding mem copy
-exports.shrinkBuf = function (buf, size) {
+exports.shrinkBuf = function (buf: any, size: number) {
   if (buf.length === size) { return buf; }
   if (buf.subarray) { return buf.subarray(0, size); }
   buf.length = size;
@@ -42,7 +42,7 @@ exports.shrinkBuf = function (buf, size) {
 
 
 var fnTyped = {
-  arraySet: function (dest, src, src_offs, len, dest_offs) {
+  arraySet: function (dest: any, src: any, src_offs: any, len: number, dest_offs: number) {
     if (src.subarray && dest.subarray) {
       dest.set(src.subarray(src_offs, src_offs + len), dest_offs);
       return;
@@ -53,7 +53,7 @@ var fnTyped = {
     }
   },
   // Join array of chunks to single array.
-  flattenChunks: function (chunks) {
+  flattenChunks: function (chunks: any) {
     var i, l, len, pos, chunk, result;
 
     // calculate data length
@@ -76,13 +76,13 @@ var fnTyped = {
 };
 
 var fnUntyped = {
-  arraySet: function (dest, src, src_offs, len, dest_offs) {
+  arraySet: function (dest: any[], src: any[], src_offs: number, len: number, dest_offs: number) {
     for (var i = 0; i < len; i++) {
       dest[dest_offs + i] = src[src_offs + i];
     }
   },
   // Join array of chunks to single array.
-  flattenChunks: function (chunks) {
+  flattenChunks: function (chunks: any[]) {
     return [].concat.apply([], chunks);
   }
 };
@@ -90,7 +90,7 @@ var fnUntyped = {
 
 // Enable/Disable typed arrays use, for testing
 //
-exports.setTyped = function (on) {
+exports.setTyped = function (on: boolean) {
   if (on) {
     exports.Buf8  = Uint8Array;
     exports.Buf16 = Uint16Array;
@@ -106,4 +106,13 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-export default exports;
+export default exports as {
+  assign: (...args: any[]) => any,
+  shrinkBuf: (buf: any, size: number) => any,
+  setTyped: (on: boolean) => any;
+  Buf8: Uint8ArrayConstructor | ArrayConstructor;
+  Buf16: Uint16ArrayConstructor | ArrayConstructor;
+  Buf32: Uint32ArrayConstructor | ArrayConstructor;
+  arraySet: (...args: any) => any;
+  flattenChunks: (...args: any) => any;
+};

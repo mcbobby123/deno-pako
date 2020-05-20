@@ -2,7 +2,7 @@
 'use strict';
 
 
-import utils from './common.js';
+import utils from './common.ts';
 
 
 // Quick check if we can use fast array to bin string conversion
@@ -14,7 +14,7 @@ var STR_APPLY_OK = true;
 var STR_APPLY_UIA_OK = true;
 
 try { String.fromCharCode.apply(null, [ 0 ]); } catch (__) { STR_APPLY_OK = false; }
-try { String.fromCharCode.apply(null, new Uint8Array(1)); } catch (__) { STR_APPLY_UIA_OK = false; }
+try { String.fromCharCode.apply(null, new Uint8Array(1) as unknown as number[]); } catch (__) { STR_APPLY_UIA_OK = false; }
 
 
 // Table with utf8 lengths (calculated by first byte of sequence)
@@ -26,10 +26,8 @@ for (var q = 0; q < 256; q++) {
 }
 _utf8len[254] = _utf8len[254] = 1; // Invalid sequence start
 
-const exports = {};
-
 // convert string to array (typed, when possible)
-exports.string2buf = function (str) {
+export function string2buf(str: string){
   var buf, c, c2, m_pos, i, str_len = str.length, buf_len = 0;
 
   // count binary size
@@ -83,32 +81,27 @@ exports.string2buf = function (str) {
 };
 
 // Helper (used in 2 places)
-function buf2binstring(buf, len) {
+function buf2binstring(buf: any, len?: number) {
+  const length = len ||buf.length;
   // On Chrome, the arguments in a function call that are allowed is `65534`.
   // If the length of the buffer is smaller than that, we can use this optimization,
   // otherwise we will take a slower path.
-  if (len < 65534) {
+  if (length < 65534) {
     if ((buf.subarray && STR_APPLY_UIA_OK) || (!buf.subarray && STR_APPLY_OK)) {
-      return String.fromCharCode.apply(null, utils.shrinkBuf(buf, len));
+      return String.fromCharCode.apply(null, utils.shrinkBuf(buf, length));
     }
   }
 
   var result = '';
-  for (var i = 0; i < len; i++) {
+  for (var i = 0; i < length; i++) {
     result += String.fromCharCode(buf[i]);
   }
   return result;
 }
 
 
-// Convert byte array to binary string
-exports.buf2binstring = function (buf) {
-  return buf2binstring(buf, buf.length);
-};
-
-
 // Convert binary string (typed, when possible)
-exports.binstring2buf = function (str) {
+export function binstring2buf(str: string) {
   var buf = new utils.Buf8(str.length);
   for (var i = 0, len = buf.length; i < len; i++) {
     buf[i] = str.charCodeAt(i);
@@ -116,9 +109,8 @@ exports.binstring2buf = function (str) {
   return buf;
 };
 
-
 // convert array to string
-exports.buf2string = function (buf, max) {
+export function buf2string(buf: any, max: number) {
   var i, out, c, c_len;
   var len = max || buf.length;
 
@@ -166,7 +158,7 @@ exports.buf2string = function (buf, max) {
 //
 // buf[] - utf8 bytes array
 // max   - length limit (mandatory);
-exports.utf8border = function (buf, max) {
+export function utf8border(buf: any, max: number) {
   var pos;
 
   max = max || buf.length;
@@ -187,4 +179,5 @@ exports.utf8border = function (buf, max) {
   return (pos + _utf8len[buf[pos]] > max) ? pos : max;
 };
 
+const exports = {string2buf, buf2binstring, binstring2buf, buf2string, utf8border};
 export default exports;

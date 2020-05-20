@@ -19,11 +19,11 @@
 //   misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 
-import utils from '../utils/common.js';
+import utils from '../utils/common.ts';
 import adler32 from './adler32.js';
 import crc32 from './crc32.js';
 import inflate_fast from './inffast.js';
-import inflate_table from './inftrees.js';
+import inflate_table from './inftrees.ts';
 
 var CODES = 0;
 var LENS = 1;
@@ -110,73 +110,109 @@ var MAX_WBITS = 15;
 var DEF_WBITS = MAX_WBITS;
 
 
-function zswap32(q) {
+function zswap32(q: number) {
   return  (((q >>> 24) & 0xff) +
           ((q >>> 8) & 0xff00) +
           ((q & 0xff00) << 8) +
           ((q & 0xff) << 24));
 }
 
-
-function InflateState() {
-  this.mode = 0;             /* current inflate mode */
-  this.last = false;          /* true if processing last block */
-  this.wrap = 0;              /* bit 0 true for zlib, bit 1 true for gzip */
-  this.havedict = false;      /* true if dictionary provided */
-  this.flags = 0;             /* gzip header method and flags (0 if zlib) */
-  this.dmax = 0;              /* zlib header max distance (INFLATE_STRICT) */
-  this.check = 0;             /* protected copy of check value */
-  this.total = 0;             /* protected copy of output count */
-  // TODO: may be {}
-  this.head = null;           /* where to save gzip header information */
-
-  /* sliding window */
-  this.wbits = 0;             /* log base 2 of requested window size */
-  this.wsize = 0;             /* window size or zero if not using window */
-  this.whave = 0;             /* valid bytes in the window */
-  this.wnext = 0;             /* window write index */
-  this.window = null;         /* allocated sliding window, if needed */
-
-  /* bit accumulator */
-  this.hold = 0;              /* input bit accumulator */
-  this.bits = 0;              /* number of bits in "in" */
-
-  /* for string and stored block copying */
-  this.length = 0;            /* literal or length of data to copy */
-  this.offset = 0;            /* distance back to copy string from */
-
-  /* for table and code decoding */
-  this.extra = 0;             /* extra bits needed */
-
-  /* fixed and dynamic code tables */
-  this.lencode = null;          /* starting table for length/literal codes */
-  this.distcode = null;         /* starting table for distance codes */
-  this.lenbits = 0;           /* index bits for lencode */
-  this.distbits = 0;          /* index bits for distcode */
-
-  /* dynamic table building */
-  this.ncode = 0;             /* number of code length code lengths */
-  this.nlen = 0;              /* number of length code lengths */
-  this.ndist = 0;             /* number of distance code lengths */
-  this.have = 0;              /* number of code lengths in lens[] */
-  this.next = null;              /* next available space in codes[] */
-
-  this.lens = new utils.Buf16(320); /* temporary storage for code lengths */
-  this.work = new utils.Buf16(288); /* work area for code table building */
-
-  /*
-   because we don't have pointers in js, we use lencode and distcode directly
-   as buffers so we don't need codes
-  */
-  //this.codes = new utils.Buf32(ENOUGH);       /* space for code tables */
-  this.lendyn = null;              /* dynamic table for length/literal codes (JS specific) */
-  this.distdyn = null;             /* dynamic table for distance codes (JS specific) */
-  this.sane = 0;                   /* if false, allow invalid distance too far */
-  this.back = 0;                   /* bits back of last unprocessed length/lit */
-  this.was = 0;                    /* initial length of match */
+class InflateState{
+  mode: number;
+  last: boolean;
+  wrap: number;
+  havedict: boolean;
+  flags: number;
+  dmax: number;
+  check: number;
+  total: number;
+  head: any;
+  wbits: number;
+  wsize: number;
+  whave: number;
+  wnext: number;
+  window: any;
+  hold: number;
+  bits: number;
+  length: number;
+  offset: number;
+  extra: number;
+  lencode: any;
+  distcode: any;
+  lenbits: number;
+  distbits: number;
+  ncode: number;
+  nlen: number;
+  ndist: number;
+  have: number;
+  next: any;
+  lens: any;
+  work: any;
+  lendyn: any;
+  distdyn: any;
+  sane: number;
+  back: number;
+  was: number;
+  constructor(){
+    this.mode = 0;             /* current inflate mode */
+    this.last = false;          /* true if processing last block */
+    this.wrap = 0;              /* bit 0 true for zlib, bit 1 true for gzip */
+    this.havedict = false;      /* true if dictionary provided */
+    this.flags = 0;             /* gzip header method and flags (0 if zlib) */
+    this.dmax = 0;              /* zlib header max distance (INFLATE_STRICT) */
+    this.check = 0;             /* protected copy of check value */
+    this.total = 0;             /* protected copy of output count */
+    // TODO: may be {}
+    this.head = null;           /* where to save gzip header information */
+    
+    /* sliding window */
+    this.wbits = 0;             /* log base 2 of requested window size */
+    this.wsize = 0;             /* window size or zero if not using window */
+    this.whave = 0;             /* valid bytes in the window */
+    this.wnext = 0;             /* window write index */
+    this.window = null;         /* allocated sliding window, if needed */
+    
+    /* bit accumulator */
+    this.hold = 0;              /* input bit accumulator */
+    this.bits = 0;              /* number of bits in "in" */
+    
+    /* for string and stored block copying */
+    this.length = 0;            /* literal or length of data to copy */
+    this.offset = 0;            /* distance back to copy string from */
+    
+    /* for table and code decoding */
+    this.extra = 0;             /* extra bits needed */
+    
+    /* fixed and dynamic code tables */
+    this.lencode = null;          /* starting table for length/literal codes */
+    this.distcode = null;         /* starting table for distance codes */
+    this.lenbits = 0;           /* index bits for lencode */
+    this.distbits = 0;          /* index bits for distcode */
+    
+    /* dynamic table building */
+    this.ncode = 0;             /* number of code length code lengths */
+    this.nlen = 0;              /* number of length code lengths */
+    this.ndist = 0;             /* number of distance code lengths */
+    this.have = 0;              /* number of code lengths in lens[] */
+    this.next = null;              /* next available space in codes[] */
+    
+    this.lens = new utils.Buf16(320); /* temporary storage for code lengths */
+    this.work = new utils.Buf16(288); /* work area for code table building */
+    
+    /*
+    because we don't have pointers in js, we use lencode and distcode directly
+    as buffers so we don't need codes
+    */
+   //this.codes = new utils.Buf32(ENOUGH);       /* space for code tables */
+   this.lendyn = null;              /* dynamic table for length/literal codes (JS specific) */
+   this.distdyn = null;             /* dynamic table for distance codes (JS specific) */
+   this.sane = 0;                   /* if false, allow invalid distance too far */
+   this.back = 0;                   /* bits back of last unprocessed length/lit */
+   this.was = 0;                    /* initial length of match */
+  }
 }
 
-function inflateResetKeep(strm) {
+function inflateResetKeep(strm: any) {
   var state;
 
   if (!strm || !strm.state) { return Z_STREAM_ERROR; }
@@ -203,7 +239,7 @@ function inflateResetKeep(strm) {
   return Z_OK;
 }
 
-function inflateReset(strm) {
+function inflateReset(strm: any) {
   var state;
 
   if (!strm || !strm.state) { return Z_STREAM_ERROR; }
@@ -215,7 +251,7 @@ function inflateReset(strm) {
 
 }
 
-function inflateReset2(strm, windowBits) {
+function inflateReset2(strm: any, windowBits: any) {
   var wrap;
   var state;
 
@@ -249,9 +285,9 @@ function inflateReset2(strm, windowBits) {
   return inflateReset(strm);
 }
 
-function inflateInit2(strm, windowBits) {
+function inflateInit2(strm: any, windowBits: any) {
   var ret;
-  var state;
+  var state: any;
 
   if (!strm) { return Z_STREAM_ERROR; }
   //strm.msg = Z_NULL;                 /* in case we return an error */
@@ -269,7 +305,7 @@ function inflateInit2(strm, windowBits) {
   return ret;
 }
 
-function inflateInit(strm) {
+function inflateInit(strm: any) {
   return inflateInit2(strm, DEF_WBITS);
 }
 
@@ -286,9 +322,9 @@ function inflateInit(strm) {
  */
 var virgin = true;
 
-var lenfix, distfix; // We have no pointers in JS, so keep tables separate
+var lenfix: any, distfix: any; // We have no pointers in JS, so keep tables separate
 
-function fixedtables(state) {
+function fixedtables(state: any) {
   /* build fixed huffman tables if first call (may not be thread safe) */
   if (virgin) {
     var sym;
@@ -336,7 +372,7 @@ function fixedtables(state) {
  output will fall in the output data, making match copies simpler and faster.
  The advantage may be dependent on the size of the processor's data caches.
  */
-function updatewindow(strm, src, end, copy) {
+function updatewindow(strm: any, src: any, end: any, copy: any) {
   var dist;
   var state = strm.state;
 
@@ -378,7 +414,7 @@ function updatewindow(strm, src, end, copy) {
   return 0;
 }
 
-function inflate(strm, flush) {
+function inflate(strm: any, flush: any) {
   var state;
   var input, output;          // input/output buffers
   var next;                   /* next input INDEX */
@@ -1470,7 +1506,7 @@ function inflate(strm, flush) {
   return ret;
 }
 
-function inflateEnd(strm) {
+function inflateEnd(strm: any) {
 
   if (!strm || !strm.state /*|| strm->zfree == (free_func)0*/) {
     return Z_STREAM_ERROR;
@@ -1484,7 +1520,7 @@ function inflateEnd(strm) {
   return Z_OK;
 }
 
-function inflateGetHeader(strm, head) {
+function inflateGetHeader(strm: any, head: any) {
   var state;
 
   /* check state */
@@ -1498,7 +1534,7 @@ function inflateGetHeader(strm, head) {
   return Z_OK;
 }
 
-function inflateSetDictionary(strm, dictionary) {
+function inflateSetDictionary(strm: any, dictionary: any) {
   var dictLength = dictionary.length;
 
   var state;
@@ -1534,27 +1570,27 @@ function inflateSetDictionary(strm, dictionary) {
   return Z_OK;
 }
 
-const exports = {};
-
-exports.inflateReset = inflateReset;
-exports.inflateReset2 = inflateReset2;
-exports.inflateResetKeep = inflateResetKeep;
-exports.inflateInit = inflateInit;
-exports.inflateInit2 = inflateInit2;
-exports.inflate = inflate;
-exports.inflateEnd = inflateEnd;
-exports.inflateGetHeader = inflateGetHeader;
-exports.inflateSetDictionary = inflateSetDictionary;
-exports.inflateInfo = 'pako inflate (from Nodeca project)';
+const exports = {
+  inflateReset,
+  inflateReset2,
+  inflateResetKeep,
+  inflateInit,
+  inflateInit2,
+  inflate,
+  inflateEnd,
+  inflateGetHeader,
+  inflateSetDictionary,
+  inflateInfo: 'pako inflate (from Nodeca project)'
+};
 
 /* Not implemented
-exports.inflateCopy = inflateCopy;
-exports.inflateGetDictionary = inflateGetDictionary;
-exports.inflateMark = inflateMark;
-exports.inflatePrime = inflatePrime;
-exports.inflateSync = inflateSync;
-exports.inflateSyncPoint = inflateSyncPoint;
-exports.inflateUndermine = inflateUndermine;
+inflateCopy
+inflateGetDictionary
+inflateMark
+inflatePrime
+inflateSync
+inflateSyncPoint
+inflateUndermine
 */
 
 export default exports;
